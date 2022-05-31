@@ -1,8 +1,8 @@
 package com.harmony.lark.model
 
-class ContinuouslyListResult<T>(
+class ContinuouslyResult<T>(
     result: ListResult<T>,
-    private val loader: (token: String?) -> ListResult<T>
+    private val loader: (token: String?) -> ListResult<T>,
 ) : ListResult<T>(
     result.hasMore,
     result.pageToken,
@@ -10,12 +10,12 @@ class ContinuouslyListResult<T>(
     result.items
 ) {
 
-    fun next(): ContinuouslyListResult<T> {
+    fun next(): ContinuouslyResult<T> {
         if (!hasNext()) {
             throw IllegalStateException("no more result")
         }
         val nextResult = loader.invoke(pageToken)
-        return ContinuouslyListResult(nextResult, loader)
+        return ContinuouslyResult(nextResult, loader)
     }
 
     fun hasNext(): Boolean {

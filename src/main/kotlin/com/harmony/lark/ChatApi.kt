@@ -1,6 +1,6 @@
 package com.harmony.lark
 
-import com.harmony.lark.model.ContinuouslyListResult
+import com.harmony.lark.model.ContinuouslyResult
 import com.larksuite.oapi.service.im.v1.ImService
 import com.larksuite.oapi.service.im.v1.model.ChatCreateResult
 import com.larksuite.oapi.service.im.v1.model.ListChat
@@ -51,7 +51,7 @@ class ChatApi(val larkApi: LarkApi) {
     /**
      * 机器人所在的群
      */
-    fun listChats(userIdType: String? = LarkIdType.UNION_ID.type): ContinuouslyListResult<ListChat> {
+    fun listChats(userIdType: String? = LarkIdType.UNION_ID.type): ContinuouslyResult<ListChat> {
         return larkApi.first { pageToken, pageSize ->
             imService.chats.list()
                 .setUserIdType(userIdType)

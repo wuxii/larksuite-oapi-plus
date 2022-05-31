@@ -19,8 +19,8 @@ class LarkApiBuilder {
     var store: IStore = DefaultStore()
     var pageSize: Int = 20
 
-    val eventHandler = EventHandler.DEFAULT
-    val cardHandler = CardHandler.DEFAULT
+    var eventHandler = EventHandler.DEFAULT
+    var cardHandler = CardHandler.DEFAULT
 
     fun build(): LarkApi {
         val appSettings = AppSettings(appType, appId, appSecret, verificationToken, encryptKey)

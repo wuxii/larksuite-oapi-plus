@@ -3,9 +3,9 @@ package com.harmony.lark
 import com.larksuite.oapi.service.contact.v3.ContactService
 import com.larksuite.oapi.service.contact.v3.model.User
 
-class UserApi(val larkApi: LarkApi) {
+class UserApi(private val larkApi: LarkApi) {
 
-    private val contactService: ContactService = larkApi.unwrap(ContactService::class.java)
+    val contactService: ContactService = larkApi.unwrap(ContactService::class.java)
 
     /**
      * 获取人员信息

@@ -1,22 +1,24 @@
 package com.harmony.lark
 
-import com.harmony.lark.model.ContinuouslyListResult
+import com.harmony.lark.model.ContinuouslyResult
 import com.harmony.lark.model.LarkRequest
 import com.harmony.lark.model.ListResult
 import com.larksuite.oapi.core.Config
 import com.larksuite.oapi.core.Context
+import com.larksuite.oapi.core.card.Card
+import com.larksuite.oapi.core.card.mode.HTTPCard
 import com.larksuite.oapi.core.event.Event
 import com.larksuite.oapi.core.event.model.HTTPEvent
 import com.larksuite.oapi.core.model.OapiRequest
 import com.larksuite.oapi.core.model.OapiResponse
-import com.larksuite.oapi.service.contact.v3.ContactService
-import com.larksuite.oapi.service.im.v1.ImService
-import com.larksuite.oapi.service.im.v1.model.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 open class LarkApi(
     val config: Config,
     var pageSize: Int = 20,
-    private val eventHandler: EventHandler = EventHandler.DEFAULT
+    private val eventHandler: EventHandler = EventHandler.DEFAULT,
+    private val cardHandler: CardHandler = CardHandler.DEFAULT
 ) {
 
     companion object {
@@ -25,7 +27,7 @@ open class LarkApi(
 
     val appId: String = config.appSettings.appID
 
-    private val serviceCache: MutableMap<Class<*>, Any> = mutableMapOf()
+    private val serviceCache: MutableMap<Class<*>, Any> = ConcurrentHashMap()
 
     fun setEventHandler(eventType: String, handler: IEventHandler<*>) {
         Event.setTypeHandler(config, eventType, handler)
@@ -35,19 +37,35 @@ open class LarkApi(
         Event.setTypeHandler(config, eventType, null as IEventHandler<*>?);
     }
 
+    fun setCardHandler(handler: ICardHandler) {
+        Card.setHandler(config, handler)
+    }
+
+    fun removeCardHandler() {
+        Card.setHandler(config, null)
+    }
+
+    fun dispatchCard(request: OapiRequest): OapiResponse {
+        val card = HTTPCard(request, OapiResponse())
+        cardHandler.handle(buildContext(), card)
+        return card.response
+    }
+
     fun dispatchEvent(request: OapiRequest): OapiResponse {
         val event = HTTPEvent(request, OapiResponse())
         eventHandler.handle(buildContext(), event)
         return event.response
     }
 
-    internal fun <T> first(fn: (String?, Int) -> Any): ContinuouslyListResult<T> {
-        val size = this.pageSize
+    internal inline fun <reified T> first(
+        pageSize: Int = this.pageSize,
+        crossinline fn: (String?, Int) -> Any,
+    ): ContinuouslyResult<T> {
         val loader = { pageToken: String? ->
-            toListResult<T>(fn.invoke(pageToken, size))
+            toListResult<T>(fn.invoke(pageToken, pageSize))
         }
         val first = loader.invoke(null)
-        return ContinuouslyListResult(first, loader)
+        return ContinuouslyResult(first, loader)
     }
 
     fun GET() = httpRequest("GET")
@@ -72,17 +90,20 @@ open class LarkApi(
 
     private fun httpRequest(httpMethod: String) = LarkRequest(httpMethod, config)
 
+    fun <T : Any> unwrap(serviceType: KClass<T>): T {
+        return unwrap(serviceType.java)
+    }
+
     fun <T> unwrap(serviceType: Class<T>): T {
         return serviceCache.computeIfAbsent(serviceType) {
             try {
                 return@computeIfAbsent it.getConstructor(LarkApi::class.java).newInstance(this)
-            } catch (e: java.util.NoSuchElementException) {
+            } catch (e: NoSuchMethodException) {
                 // is not larkApi service
             }
-
             try {
                 return@computeIfAbsent it.getConstructor(Config::class.java).newInstance(config)
-            } catch (e: java.util.NoSuchElementException) {
+            } catch (e: NoSuchMethodException) {
                 throw LarkException("$serviceType not lark service", e)
             }
         } as T
@@ -100,15 +121,28 @@ open class LarkApi(
         return if (id == null) null else LarkIdType.ofType(id)
     }
 
-    internal fun <T> toListResult(result: Any): ListResult<T> {
+    private inline fun <reified T> toListResult(result: Any): ListResult<T> {
         if (result is ListResult<*>) {
             return result as ListResult<T>
+        }
+        if (result is Map<*, *>) {
+            return toListResult(result)
         }
         return ListResult(
             hasMore = getFieldValue("hasMore", result),
             pageToken = getFieldValue("pageToken", result),
             total = getFieldValue("total", result),
             items = getFieldValue("items", result)
+        )
+    }
+
+    private inline fun <reified T> toListResult(map: Map<*, *>): ListResult<T> {
+        val items = map["items"] as List<T>?
+        return ListResult(
+            hasMore = map["has_more"] as Boolean,
+            pageToken = map["page_token"] as String,
+            total = (map["total"] as Int?) ?: -1,
+            items = items?.toTypedArray() ?: arrayOf()
         )
     }
 

@@ -1,5 +1,6 @@
 .idea
 target
+**/application-local.*
 
 # Compiled class file
 *.class

@@ -1,10 +1,11 @@
 package com.harmony.lark
 
-import com.harmony.lark.model.ContinuouslyListResult
+import com.harmony.lark.model.ContinuouslyResult
+import com.harmony.lark.model.ListResult
 
-class WikiApi(val larkApi: LarkApi) {
+class WikiApi(private val larkApi: LarkApi) {
 
-    fun getSpaces(): ContinuouslyListResult<Map<String, Any>> {
+    fun getSpaces(): ContinuouslyResult<Map<String, Any>> {
         return larkApi.first { pageToken, pageSize ->
             larkApi.GET("https://open.feishu.cn/open-apis/wiki/v2/spaces")
                 .setPageParams(pageToken, pageSize)
@@ -20,19 +21,21 @@ class WikiApi(val larkApi: LarkApi) {
             .ensureData { LarkException("获取知识空间信息失败", it) }
     }
 
-    fun getNode(token: String): Map<String, Any> {
+    fun getNode(token: String): Node {
         return larkApi.GET("https://open.feishu.cn/open-apis/wiki/v2/spaces/get_node")
             .setQueryParams("token", token)
-            .execute()
+            .execute(Node::class.java)
             .ensureData { LarkException("获取节点信息失败", it) }
     }
 
-    fun getChildNodes(spaceId: String, token: String?): ContinuouslyListResult<Map<String, Any>> {
+    fun getChildNodes(spaceId: String, token: String? = null): ContinuouslyResult<Node> {
+        TODO("execute type and result type convert")
         return larkApi.first { pageToken, pageSize ->
             larkApi.GET("https://open.feishu.cn/open-apis/wiki/v2/spaces/:space_id/nodes")
                 .setPathVariable("space_id", spaceId)
+                .setQueryParams("parent_node_token", token)
                 .setPageParams(pageToken, pageSize)
-                .execute()
+                .execute(ListResult::class.java)
                 .ensureData { LarkException("获取子节点信息失败", it) }
         }
     }
@@ -46,7 +49,8 @@ class WikiApi(val larkApi: LarkApi) {
             .ensureData { LarkException("移动节点失败", it) }
     }
 
-    fun getWikiBitableRecords(token: String) {
+    fun getWikiContent(token: String) {
+
     }
 
 }
