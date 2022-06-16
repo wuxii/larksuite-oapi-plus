@@ -1,8 +1,13 @@
 package com.harmony.lark.model
 
-open class ListResult<T>(
-    val hasMore: Boolean,
-    val pageToken: String,
-    val total: Int?,
-    val items: Array<T>,
-)
+interface ListResult<T> {
+
+    fun getHasMore() = false
+
+    fun getPageToken() = ""
+
+    fun getTotal() = -1
+
+    fun getItems() = listOf<T>()
+
+}

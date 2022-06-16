@@ -59,7 +59,7 @@ fun <IN, OUT> newRequest(
     accessTokenType: List<AccessTokenType> = listOf(AccessTokenType.Tenant),
     body: IN,
     result: OUT,
-    vararg requestOptFn: RequestOptFn
+    vararg requestOptFn: RequestOptFn,
 ): Request<IN, OUT> =
     Request.newRequest(httpPath, httpMethod, accessTokenType.toTypedArray(), body, result, *requestOptFn)
 

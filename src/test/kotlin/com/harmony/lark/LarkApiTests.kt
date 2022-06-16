@@ -1,24 +1,29 @@
 package com.harmony.lark
 
+import com.harmony.lark.model.wiki.NodeList
 import com.larksuite.oapi.core.utils.Jsons
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-class LarkApiTests(@Autowired val larkApi: LarkApi) {
+@ActiveProfiles("local")
+@SpringBootTest(properties = ["debug=true"])
+class LarkApiTests {
 
-    val wikiApi = larkApi.unwrap(WikiApi::class)
+    @Autowired
+    lateinit var larkApi: LarkApi
 
     @Test
     fun test() {
-        val nodes = wikiApi.getChildNodes("7008734914229338115")
-        println(Jsons.DEFAULT_GSON.toJson(nodes))
-    }
-
-    @Test
-    fun testGetWikiContent() {
-        wikiApi.getWikiContent("wikcn2ExVnA9YMTd2KMiGldsqJB")
+        val data = larkApi.GET()
+            .setPath("https://open.feishu.cn/open-apis/wiki/v2/spaces/:space_id/nodes")
+            .setPathVariable("space_id", "7008734914229338115")
+            .setQueryParams("parent_node_token", "wikcnXdNHMcfzgDNVc0gDJ5689Y")
+            .setPageParams(null, 10)
+            .execute(NodeList::class.java)
+            .ensureData()
+        println(Jsons.DEFAULT_GSON.toJson(data))
     }
 
 }

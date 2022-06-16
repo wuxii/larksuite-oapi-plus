@@ -8,7 +8,7 @@ import com.larksuite.oapi.core.api.response.Response
 open class LarkException(
     message: String?,
     val larkResponse: Response<*>? = null,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : RuntimeException(message, cause) {
 
     constructor(message: String?, cause: Throwable?) : this(message, null, cause)

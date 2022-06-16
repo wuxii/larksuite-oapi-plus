@@ -1,7 +1,6 @@
 package com.harmony.lark
 
 import com.harmony.lark.model.ContinuouslyResult
-import com.harmony.lark.model.LarkRequest
 import com.harmony.lark.model.ListResult
 import com.larksuite.oapi.core.Config
 import com.larksuite.oapi.core.Context
@@ -11,23 +10,21 @@ import com.larksuite.oapi.core.event.Event
 import com.larksuite.oapi.core.event.model.HTTPEvent
 import com.larksuite.oapi.core.model.OapiRequest
 import com.larksuite.oapi.core.model.OapiResponse
-import java.util.concurrent.ConcurrentHashMap
+import com.larksuite.oapi.core.utils.Jsons
 import kotlin.reflect.KClass
 
 open class LarkApi(
     val config: Config,
     var pageSize: Int = 20,
     private val eventHandler: EventHandler = EventHandler.DEFAULT,
-    private val cardHandler: CardHandler = CardHandler.DEFAULT
+    private val cardHandler: CardHandler = CardHandler.DEFAULT,
 ) {
 
     companion object {
-        internal const val CTX_LARK_API = "-----ctxLarkApi"
+        const val CTX_LARK_API = "-----ctxLarkApi"
     }
 
     val appId: String = config.appSettings.appID
-
-    private val serviceCache: MutableMap<Class<*>, Any> = ConcurrentHashMap()
 
     fun setEventHandler(eventType: String, handler: IEventHandler<*>) {
         Event.setTypeHandler(config, eventType, handler)
@@ -57,36 +54,28 @@ open class LarkApi(
         return event.response
     }
 
-    internal inline fun <reified T> first(
-        pageSize: Int = this.pageSize,
-        crossinline fn: (String?, Int) -> Any,
-    ): ContinuouslyResult<T> {
-        val loader = { pageToken: String? ->
-            toListResult<T>(fn.invoke(pageToken, pageSize))
-        }
-        val first = loader.invoke(null)
-        return ContinuouslyResult(first, loader)
+    internal fun <T> first(pageSize: Int = this.pageSize, fn: (String?, Int) -> Any): ContinuouslyResult<T> {
+        val loader = { pageToken: String? -> toListResult<T>(fn.invoke(pageToken, pageSize)) }
+        return ContinuouslyResult(loader.invoke(null), loader)
+    }
+
+    private fun <T> toListResult(obj: Any): ListResult<T> {
+        obj.javaClass.getDeclaredField("items")
+        obj.javaClass.getDeclaredField("pageToken")
+        obj.javaClass.getDeclaredField("hasMore")
+        obj.javaClass.getDeclaredField("total")
+        return null!!
     }
 
     fun GET() = httpRequest("GET")
 
-    fun GET(path: String) = GET().setPath(path)
-
     fun POST() = httpRequest("POST")
-
-    fun POST(path: String) = POST().setPath(path)
 
     fun DELETE() = httpRequest("DELETE")
 
-    fun DELETE(path: String) = DELETE().setPath(path)
-
     fun PUT() = httpRequest("PUT")
 
-    fun PUT(path: String) = PUT().setPath(path)
-
     fun PATCH() = httpRequest("PATCH")
-
-    fun PATCH(path: String) = PATCH().setPath(path)
 
     private fun httpRequest(httpMethod: String) = LarkRequest(httpMethod, config)
 
@@ -95,21 +84,19 @@ open class LarkApi(
     }
 
     fun <T> unwrap(serviceType: Class<T>): T {
-        return serviceCache.computeIfAbsent(serviceType) {
-            try {
-                return@computeIfAbsent it.getConstructor(LarkApi::class.java).newInstance(this)
-            } catch (e: NoSuchMethodException) {
-                // is not larkApi service
-            }
-            try {
-                return@computeIfAbsent it.getConstructor(Config::class.java).newInstance(config)
-            } catch (e: NoSuchMethodException) {
-                throw LarkException("$serviceType not lark service", e)
-            }
-        } as T
+        try {
+            serviceType.getConstructor(LarkApi::class.java).newInstance(this)
+        } catch (e: Exception) {
+            // ignore
+        }
+        try {
+            return serviceType.getConstructor(Config::class.java).newInstance(this)
+        } catch (e: Exception) {
+            throw LarkException("$serviceType not lark service", e)
+        }
     }
 
-    internal fun buildContext(): Context {
+    private fun buildContext(): Context {
         val context = Context()
         config.withContext(context)
         context.set(CTX_LARK_API, this)
@@ -121,36 +108,8 @@ open class LarkApi(
         return if (id == null) null else LarkIdType.ofType(id)
     }
 
-    private inline fun <reified T> toListResult(result: Any): ListResult<T> {
-        if (result is ListResult<*>) {
-            return result as ListResult<T>
-        }
-        if (result is Map<*, *>) {
-            return toListResult(result)
-        }
-        return ListResult(
-            hasMore = getFieldValue("hasMore", result),
-            pageToken = getFieldValue("pageToken", result),
-            total = getFieldValue("total", result),
-            items = getFieldValue("items", result)
-        )
-    }
+    class ListResultAdapter<T> : ListResult<T> {
 
-    private inline fun <reified T> toListResult(map: Map<*, *>): ListResult<T> {
-        val items = map["items"] as List<T>?
-        return ListResult(
-            hasMore = map["has_more"] as Boolean,
-            pageToken = map["page_token"] as String,
-            total = (map["total"] as Int?) ?: -1,
-            items = items?.toTypedArray() ?: arrayOf()
-        )
-    }
-
-    private fun <T> getFieldValue(name: String, obj: Any): T {
-        return obj.javaClass.getDeclaredField(name).let {
-            it.isAccessible = true
-            return@let it.get(obj)
-        } as T
     }
 
 }

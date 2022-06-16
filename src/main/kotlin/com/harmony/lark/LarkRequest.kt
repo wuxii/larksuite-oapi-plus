@@ -1,6 +1,5 @@
-package com.harmony.lark.model
+package com.harmony.lark
 
-import com.harmony.lark.newRequest
 import com.larksuite.oapi.core.Config
 import com.larksuite.oapi.core.api.AccessTokenType
 import com.larksuite.oapi.core.api.Api
@@ -8,8 +7,8 @@ import com.larksuite.oapi.core.api.request.Request
 import com.larksuite.oapi.core.api.response.Response
 
 class LarkRequest(
-    val httpMethod: String,
-    private val config: Config
+    private val httpMethod: String,
+    private val config: Config,
 ) {
 
     private lateinit var path: String
