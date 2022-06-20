@@ -3,7 +3,7 @@ package com.harmony.lark.model
 class ContinuouslyResult<T>(
     private val listResult: ListResult<T>,
     private val loader: (token: String?) -> ListResult<T>,
-) {
+) : Iterable<T> {
 
     fun next(): ContinuouslyResult<T> {
         if (!hasNext()) {
@@ -17,10 +17,9 @@ class ContinuouslyResult<T>(
         return listResult.getHasMore() && listResult.getPageToken().isNotBlank()
     }
 
-    /**
-     * all remain <T> element iterator
-     */
-    fun toIterator(): Iterator<T> {
+    fun getItems() = listResult.getItems()
+
+    override fun iterator(): Iterator<T> {
         return ItemIterator(this)
     }
 
@@ -54,4 +53,5 @@ class ContinuouslyResult<T>(
         }
 
     }
+
 }

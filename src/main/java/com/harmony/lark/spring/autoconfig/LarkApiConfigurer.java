@@ -1,13 +1,12 @@
 package com.harmony.lark.spring.autoconfig;
 
 import com.harmony.lark.LarkApi;
-import com.harmony.lark.eventhandler.RegistrableEventHandler;
-import com.harmony.lark.eventhandler.TypedEventHandler;
+import com.harmony.lark.event.handler.RegistrableEventHandler;
 
 /**
  * @author wuxin
  */
-public interface LarkApiCustomizer {
+public interface LarkApiConfigurer {
 
     default void addEventHandlers(EventHandlerRegistry registry) {
     }
@@ -39,10 +38,6 @@ public interface LarkApiCustomizer {
 
         public void registerHandler(RegistrableEventHandler<?> handler) {
             handler.register(larkApi);
-        }
-
-        public void registerHandler(TypedEventHandler<?> handler) {
-            larkApi.setEventHandler(handler.getEventType(), handler);
         }
 
         public void registerHandler(String eventType, com.larksuite.oapi.core.event.IHandler<?> handler) {

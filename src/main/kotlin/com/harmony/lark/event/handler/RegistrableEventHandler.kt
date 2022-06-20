@@ -1,4 +1,4 @@
-package com.harmony.lark.eventhandler
+package com.harmony.lark.event.handler
 
 import com.harmony.lark.LarkApi
 import com.larksuite.oapi.core.Context

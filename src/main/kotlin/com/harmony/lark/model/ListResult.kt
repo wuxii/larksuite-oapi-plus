@@ -2,12 +2,38 @@ package com.harmony.lark.model
 
 interface ListResult<T> {
 
-    fun getHasMore() = false
+    companion object {
+        fun <T> simple(
+            hasMore: Boolean,
+            pageToken: String,
+            total: Int = -1,
+            items: List<T> = listOf(),
+        ): ListResult<T> = object : ListResult<T> {
 
-    fun getPageToken() = ""
+            override fun getHasMore(): Boolean {
+                return hasMore
+            }
 
-    fun getTotal() = -1
+            override fun getPageToken(): String {
+                return pageToken
+            }
 
-    fun getItems() = listOf<T>()
+            override fun getTotal(): Int {
+                return total
+            }
+
+            override fun getItems(): List<T> {
+                return items
+            }
+        }
+    }
+
+    fun getHasMore(): Boolean
+
+    fun getPageToken(): String
+
+    fun getTotal(): Int
+
+    fun getItems(): List<T>
 
 }

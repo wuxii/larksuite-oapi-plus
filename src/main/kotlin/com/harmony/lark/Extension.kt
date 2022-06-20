@@ -7,7 +7,14 @@ import com.larksuite.oapi.core.api.ReqCaller
 import com.larksuite.oapi.core.api.request.Request
 import com.larksuite.oapi.core.api.request.RequestOptFn
 import com.larksuite.oapi.core.api.response.Response
+import com.larksuite.oapi.core.model.OapiRequest
+import com.larksuite.oapi.core.utils.Servlets
 import com.larksuite.oapi.service.im.v1.ImService
+import com.larksuite.oapi.service.im.v1.model.MessageReceiveEventData
+import lombok.SneakyThrows
+import java.io.IOException
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 typealias EventHandler = com.larksuite.oapi.core.event.handler.Handler
 
@@ -67,10 +74,74 @@ fun Context.getConfig(): Config? {
     return Config.ByCtx(this)
 }
 
-fun Context.getLarkFacade(): LarkApi? {
+fun Context.getLarkApi(): LarkApi? {
     return this.get(LarkApi.CTX_LARK_API) as LarkApi?
 }
 
 fun <T> Context.get(requireType: Class<T>): T? {
     return this.get(requireType.name) as T?
+}
+
+fun MessageReceiveEventData.isTextMessage(): Boolean {
+    return this.message.messageType == "text"
+}
+
+fun MessageReceiveEventData.isGroupMessage(): Boolean {
+    return this.message.chatType == "group"
+}
+
+fun MessageReceiveEventData.isPrivateMessage(): Boolean {
+    return this.message.messageType == "p2p"
+}
+
+fun MessageReceiveEventData.getTextMessageContent(): String {
+    if (!this.isTextMessage()) {
+        throw LarkException("message type `!=` text")
+    }
+    return this.message.content
+}
+
+fun MessageReceiveEventData.getTextMessageDisplayContent(): String {
+    var content = getTextMessageContent()
+    val mentions = this.message.mentions
+    if (mentions?.isNotEmpty() == true) {
+        for (mention in mentions) {
+            content = content.replace(mention.key, "@${mention.name}")
+        }
+    }
+    return content
+}
+
+fun MessageReceiveEventData.getTextMessageTrimContent(): String {
+    var content = getTextMessageContent()
+    val mentions = this.message.mentions
+    if (mentions?.isNotEmpty() == true) {
+        for (mention in mentions) {
+            content = content.replace(mention.key, "")
+        }
+    }
+    return content
+}
+
+fun MessageReceiveEventData.isTextMessageContentStartsWith(prefix: String): Boolean {
+    if (!this.isTextMessage()) {
+        return false
+    }
+    return getTextMessageTrimContent().startsWith(prefix)
+}
+
+fun MessageReceiveEventData.getMessageId(): String {
+    return this.message.messageId
+}
+
+fun MessageReceiveEventData.getChatId(): String {
+    return this.message.chatId
+}
+
+@SneakyThrows(IOException::class)
+fun LarkApi.dispatchEvent(httpRequest: HttpServletRequest, httpResponse: HttpServletResponse) {
+    val oapiRequest = Servlets.toRequest(httpRequest)
+    val oapiResponse = this.dispatchEvent(oapiRequest)
+    Servlets.writeResponse(oapiResponse, httpResponse)
+    this.log.info("Dispatch lark event $oapiRequest and reply $oapiResponse")
 }

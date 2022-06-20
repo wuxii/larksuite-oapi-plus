@@ -12,8 +12,8 @@ object LarkUtils {
         return BitableAddress(
             address = address,
             appToken = pathSegments.last(),
-            table = queryParams["table"]!!,
-            view = queryParams["view"]!!
+            tableId = queryParams["table"]!!,
+            viewId = queryParams["view"]!!
         )
     }
 

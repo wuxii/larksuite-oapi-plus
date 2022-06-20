@@ -1,7 +1,6 @@
 package com.harmony.lark
 
 import com.google.gson.annotations.SerializedName
-import com.harmony.lark.model.ListResult
 import com.larksuite.oapi.core.utils.Jsons
 import com.larksuite.oapi.service.im.v1.model.ChatCreateReqBody
 
@@ -125,8 +124,8 @@ data class ApprovalInstanceRollbackBody(
 data class BitableAddress(
     val address: String,
     val appToken: String,
-    val table: String,
-    val view: String,
+    val tableId: String,
+    val viewId: String,
 )
 
 data class Space(

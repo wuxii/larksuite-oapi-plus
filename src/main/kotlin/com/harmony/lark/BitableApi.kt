@@ -2,9 +2,7 @@ package com.harmony.lark
 
 import com.harmony.lark.model.ContinuouslyResult
 import com.larksuite.oapi.service.bitable.v1.BitableService
-import com.larksuite.oapi.service.bitable.v1.model.AppTableCreateReqBody
-import com.larksuite.oapi.service.bitable.v1.model.AppTableField
-import com.larksuite.oapi.service.bitable.v1.model.ReqTable
+import com.larksuite.oapi.service.bitable.v1.model.*
 
 class BitableApi(val larkApi: LarkApi) {
 
@@ -27,8 +25,7 @@ class BitableApi(val larkApi: LarkApi) {
             .setTableId(tableId)
             .execute()
             .ensureData()
-            .field
-            .fieldId
+            .field.fieldId
     }
 
     fun getBitableFields(appToken: String, tableId: String): ContinuouslyResult<AppTableField> {
@@ -43,11 +40,31 @@ class BitableApi(val larkApi: LarkApi) {
         }
     }
 
+    fun updateBitableField(appToken: String, tableId: String, fieldId: String, field: AppTableField) {
+        bitableService.appTableFields.update(field)
+            .setAppToken(appToken)
+            .setTableId(tableId)
+            .setFieldId(fieldId)
+            .execute()
+            .ensureData()
+    }
+
     fun removeBitableFields(appToken: String, tableId: String, fieldIds: List<String>) {
         bitableService.appTableFields.delete()
             .setAppToken(appToken)
             .setTableId(tableId)
             .setFieldId("")
+    }
+
+    fun addBitableRecords(appToken: String, tableId: String, records: List<AppTableRecord>) {
+        val body = AppTableRecordBatchCreateReqBody()
+        body.records = records.toTypedArray()
+        bitableService.appTableRecords
+            .batchCreate(body)
+            .setAppToken(appToken)
+            .setTableId(tableId)
+            .execute()
+            .ensureData()
     }
 
 }

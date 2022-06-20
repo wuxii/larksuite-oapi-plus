@@ -1,0 +1,22 @@
+{
+  "name": "名称",
+  "bizTag": "credential",
+  "detail": "应用商店应用通过此接口获取 app_access_token，调用接口获取应用资源时，需要使用 app_access_token 作为授权凭证。",
+  "fullDose": true,
+  "fullPath": "/document/ukTMukTMukTM/ukDNz4SO0MjL5QzM/auth-v3/auth/app_access_token",
+  "id": "ID",
+  "meta": {
+    "Name": "app_access_token",
+    "Project": "auth",
+    "Resource": "auth",
+    "Type": 1,
+    "Version": "v3"
+  },
+  "orderMark": "0",
+  "supportAppTypes": [
+    "isv"
+  ],
+  "tags": [],
+  "updateTime": 1646285440,
+  "url": "POST:/open-apis/auth/v3/app_access_token"
+}

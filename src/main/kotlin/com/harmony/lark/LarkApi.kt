@@ -10,7 +10,10 @@ import com.larksuite.oapi.core.event.Event
 import com.larksuite.oapi.core.event.model.HTTPEvent
 import com.larksuite.oapi.core.model.OapiRequest
 import com.larksuite.oapi.core.model.OapiResponse
-import com.larksuite.oapi.core.utils.Jsons
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 import kotlin.reflect.KClass
 
 open class LarkApi(
@@ -23,6 +26,8 @@ open class LarkApi(
     companion object {
         const val CTX_LARK_API = "-----ctxLarkApi"
     }
+
+    val log: Logger = LoggerFactory.getLogger(LarkApi::class.java)
 
     val appId: String = config.appSettings.appID
 
@@ -60,11 +65,29 @@ open class LarkApi(
     }
 
     private fun <T> toListResult(obj: Any): ListResult<T> {
-        obj.javaClass.getDeclaredField("items")
-        obj.javaClass.getDeclaredField("pageToken")
-        obj.javaClass.getDeclaredField("hasMore")
-        obj.javaClass.getDeclaredField("total")
-        return null!!
+        if (obj is ListResult<*>) {
+            return obj as ListResult<T>
+        }
+        val hasMore = getValue(obj, "hasMore")!!
+        val pageToken = getValue(obj, "pageToken")!!
+        val total = getValue(obj, "total")
+        val items = getValue(obj, "items")!!
+        return ListResult.simple(
+            hasMore = hasMore as Boolean,
+            pageToken = pageToken as String,
+            total = if (total == null) -1 else total as Int,
+            items = (items as Array<T>).toList()
+        )
+    }
+
+    private fun getValue(obj: Any, name: String): Any? {
+        try {
+            val field = obj.javaClass.getDeclaredField(name)
+            field.isAccessible = true
+            return field.get(obj)
+        } catch (e: java.lang.Exception) {
+            return null
+        }
     }
 
     fun GET() = httpRequest("GET")
@@ -85,12 +108,12 @@ open class LarkApi(
 
     fun <T> unwrap(serviceType: Class<T>): T {
         try {
-            serviceType.getConstructor(LarkApi::class.java).newInstance(this)
+            return serviceType.getConstructor(LarkApi::class.java).newInstance(this)
         } catch (e: Exception) {
             // ignore
         }
         try {
-            return serviceType.getConstructor(Config::class.java).newInstance(this)
+            return serviceType.getConstructor(Config::class.java).newInstance(config)
         } catch (e: Exception) {
             throw LarkException("$serviceType not lark service", e)
         }
@@ -106,10 +129,6 @@ open class LarkApi(
     internal fun firstNotNullIdType(first: String?, remain: List<String>): String? {
         val id = (listOf(first) + remain).first { it != null }
         return if (id == null) null else LarkIdType.ofType(id)
-    }
-
-    class ListResultAdapter<T> : ListResult<T> {
-
     }
 
 }
